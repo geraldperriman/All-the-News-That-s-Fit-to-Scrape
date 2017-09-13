@@ -1,0 +1,19 @@
+{
+  "name": "scrapenews",
+  "version": "1.0.0",
+  "description": "scraping news ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geraldperriman/All-the-News-That-s-Fit-to-Scrape.git"
+  },
+  "author": "G.Perriman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/geraldperriman/All-the-News-That-s-Fit-to-Scrape/issues"
+  },
+  "homepage": "https://github.com/geraldperriman/All-the-News-That-s-Fit-to-Scrape#readme"
+}
