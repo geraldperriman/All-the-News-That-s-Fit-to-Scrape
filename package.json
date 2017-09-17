@@ -1,18 +1,8 @@
 {
-  "name": "newsnewsnews",
+  "name": "allthenews",
   "version": "1.0.0",
-  "description": "news scraper",
+  "description": "news",
   "main": "server.js",
-  "dependencies": {
-    "body-parser": "^1.15.2",
-    "cheerio": "^0.22.0",
-    "express": "^4.14.0",
-    "express-handlebars": "^3.0.0",
-    "mongoose": "^4.7.1",
-    "morgan": "^1.7.0",
-    "request": "^2.79.0"
-  },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -21,7 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/geraldperriman/All-the-News-That-s-Fit-to-Scrape.git"
   },
-  "author": "G.P.",
+  "author": "Geral Perriman",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/geraldperriman/All-the-News-That-s-Fit-to-Scrape/issues"

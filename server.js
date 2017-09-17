@@ -1,126 +1,177 @@
-// save heroku URI
-// MONGODB_URI: mongodb://heroku_5042z69r:b0335q5fpup4hrjahf743i7oij@ds119618.mlab.com:19618/heroku_5042z69r
-
-
-var express = require("express"); // server
+// Dependencies
+var express = require("express");
 var bodyParser = require("body-parser");
-var logger = require("morgan");
-var mongoose = require("mongoose"); // for mongodb
-var request = require("request"); // needed for scraping
-var cheerio = require("cheerio"); // needed for scraping
-// var exphbs = require('express-handlebars'); - not currently using handlebars
-var Promise = require("bluebird");
-
+var mongoose = require("mongoose");
+var path = require("path");
+var methodOverride = require("method-override");
+// Requiring our Note and Article models
 var Note = require("./models/note.js");
-var Movie = require("./models/news.js");
+var Article = require("./models/article.js");
 
+// Our scraping tools
+var request = require("request");
+var cheerio = require("cheerio");
+// Set mongoose to leverage built in JavaScript ES6 Promises
 mongoose.Promise = Promise;
 
-// initialize express
-var app = express();
 
-// morgan and body-parser
-app.use(logger("dev"));
+// Initialize Express
+var app = express();
+var PORT = process.env.PORT || 3000;
+
+// Use body parser with our app
 app.use(bodyParser.urlencoded({
   extended: false
 }));
 
-// handlebars code, not using
-// app.engine('handlebars', exphbs({
-// 	defaultLayout: 'main'
-// }));
-// app.set('view engine', 'handlebars');
+// override with POST having ?_method=PUT
+app.use(methodOverride('_method'));
 
-// make public a static dir
-app.use(express.static("public"));
+// Make public a static dir
+app.use(express.static("./public"));
 
-// database configuration with mongoose
-mongoose.connect("mongodb://localhost/week-18-news-db");
+// Set Handlebars.
+var exphbs = require("express-handlebars");
+
+app.set('views', __dirname + '/views');
+app.engine("handlebars", exphbs({ defaultLayout: "main", layoutsDir: __dirname + "/views/layouts" }));
+app.set("view engine", "handlebars");
+
+// Database configuration with mongoose
+
+var databaseUri = "mongodb://localhost/nhlscrape";
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI);
+} else {
+  mongoose.connect(databaseUri);
+}
 var db = mongoose.connection;
 
-// mongoose errors
+/*mongoose.connect("mongodb://heroku_dnbl2f3n:etrnrrvnoe7m1qmtae0jret6ss@ds111882.mlab.com:11882/heroku_dnbl2f3n");
+var db = mongoose.connection;*/
+
+// Show any mongoose errors
 db.on("error", function(error) {
-    console.log("Mongoose error: ", error);
+  console.log("Mongoose Error: ", error);
 });
 
-// log the connection with mongoose
+// Once logged in to the db through mongoose, log a success message
 db.once("open", function() {
-  console.log("Mongoose connection working.");
+  console.log("Mongoose connection successful.");
 });
 
-// routes
-app.get("/", function(req, res) {
-  res.send(index.html);
-});
+//=========Routes==========//
 
-// scrape the webpage and send to the database
-app.get('/scrape', function(req, res){
-    // request passes twp parameters, the URL and a callback
-    request('http://www.ajc.com/', function(error, response, html){
-        // use the cheerio library on the returned html which will give us jQuery functionality
-        var $ = cheerio.load(html);
-        // define the variables we're going to capture
-        var title;
-        var result = {};
-        // use the header class as a starting point
-        $('.title_block').filter(function(){
-            // store the data in a variable
-            var data = $(this);
-            // assign the data to the result variable
-            result = data.text();
-        });
-
-        // use the movie model to create a new database entry
-        var entry = new News(result);
-        // save the entry to the database
-        entry.save(function(err, doc){
-            //log any errors
-            if (err) {
-                console.log(err);
-            }
-            else {
-                console.log(doc);
-            }
-        });
+app.get("/", function (req, res) {
+  Article.find({})
+    .exec(function (error, data) {
+      if (error) {
+        res.send(error);
+      }
+      else {
+        var newsObj = {
+          Article: data
+        };
+        res.render("index", newsObj);
+      }
     });
-    res.send("scrape complete");
 });
 
-// get the movie info back from mongodb
-app.get('/news', function(req, res){
-    // grab all of the info from the movie
-    News.find({}, function(error, doc){
-        if (error) {
-            console.log(error);
+// A GET request to scrape the nhl/oilers website
+app.get("/scrape", function(req, res) {
+  // First, we grab the body of the html with request
+  request("https://www.nhl.com/oilers/", function(error, response, html) {
+    // Then, we load that into cheerio and save it to $ for a shorthand selector
+    var $ = cheerio.load(html);
+    // Now, we grab every h2 within an article tag, and do the following:
+    $("h4.headline-link").each(function(i, element) {
+
+      // Save an empty result object
+      var result = {};
+
+      // Add the text and href of every link, and save them as properties of the result object
+      result.title = $(this).text();
+      result.link = $(this).parent("a").attr("href");
+
+      // Using our Article model, create a new entry
+      // This effectively passes the result object to the entry (and the title and link)
+      var entry = new Article(result);
+
+      // Now, save that entry to the db
+      entry.save(function(err, doc) {
+        // Log any errors
+        if (err) {
+          console.log(err);
         }
+        // Or log the doc
         else {
-            res.json(doc);
+          console.log(doc);
         }
+      });
+
+    });
+    res.redirect("/");
+    console.log("Successfully Scraped");
+  });
+});
+
+app.post("/notes/:id", function (req, res) {
+  var newNote = new Note(req.body);
+  newNote.save(function (error, doc) {
+    if (error) {
+      console.log(error);
+    }
+    else {
+      console.log("this is the DOC " + doc);
+      Article.findOneAndUpdate({
+        "_id": req.params.id
+      },
+        { $push: { "note": doc._id } }, {new: true},  function (err, doc) {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log("note saved: " + doc);
+            res.redirect("/notes/" + req.params.id);
+          }
+        });
+    }
+  });
+});
+
+app.get("/notes/:id", function (req, res) {
+  console.log("This is the req.params: " + req.params.id);
+  Article.find({
+    "_id": req.params.id
+  }).populate("note")
+    .exec(function (error, doc) {
+      if (error) {
+        console.log(error);
+      }
+      else {
+        var notesObj = {
+          Article: doc
+        };
+        console.log(notesObj);
+        res.render("notes", notesObj);
+      }
     });
 });
 
-// post a new note to the database
-app.post('/news/note', function(req, res){
-    // create a new note and pass the req.body to the entry
-    var newNote = new Note(req.body);
-    // save the new note to the database
-    newNote.save(function(error, doc){
-        if (error) {
-            console.log(error);
-        }
-        else {
-            console.log(doc);
-        }
-    });
+app.get("/delete/:id", function (req, res) {
+  Note.remove({
+    "_id":req.params.id
+  }).exec(function (error, doc) {
+    if (error) {
+      console.log(error);
+    }
+    else {
+      console.log("note deleted");
+      res.redirect("/" );
+    }
+  });
 });
 
-// grab a note from the database
-app.get('/news/note', function(req, res){
-    
-});
-
-
-// port connection
-app.listen(8080, function() {
-  console.log("App running on port 8080");
+// Listen on port 3000
+app.listen(PORT, function() {
+  console.log("App running on PORT" + PORT + "!");
 });
