@@ -6,9 +6,9 @@ var Schema = mongoose.Schema;
 
 // make NoteSchema a Schema
 var NoteSchema = new Schema({
-  note: {
-    type: String
-  }
+    note: {
+        type: String
+    }
 });
 
 var Note = mongoose.model("Note", NoteSchema);

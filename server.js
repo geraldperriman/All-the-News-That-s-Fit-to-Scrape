@@ -39,7 +39,7 @@ app.set("view engine", "handlebars");
 
 // Database configuration with mongoose
 
-var databaseUri = "mongodb://localhost/nflscrape";
+var databaseUri = "mongodb://localhost/atlscrape";
 if (process.env.MONGODB_URI) {
     mongoose.connect(process.env.MONGODB_URI);
 } else {
@@ -79,11 +79,11 @@ app.get("/", function(req, res) {
 // A GET request to scrape the nhl/oilers website
 app.get("/scrape", function(req, res) {
     // First, we grab the body of the html with request
-    request("http://bleacherreport.com/atlanta-falcons", function(error, response, html) {
+    request("http://www.espn.com/nfl/team/_/name/atl/atlanta-falcons", function(error, response, html) {
         // Then, we load that into cheerio and save it to $ for a shorthand selector
         var $ = cheerio.load(html);
         // Now, we grab every h2 within an article tag, and do the following:
-        $("h4.headline-link").each(function(i, element) {
+        $("h1.realStory").each(function(i, element) {
 
             // Save an empty result object
             var result = {};
