@@ -9,10 +9,11 @@ var ArticleSchema = new Schema({
     // name: a unique string
     title: {
         type: String,
-        unique: true
+        required: true
     },
     link: {
-        type: String
+        type: String,
+        // required: true
     },
     note: [{
         type: Schema.Types.ObjectId,

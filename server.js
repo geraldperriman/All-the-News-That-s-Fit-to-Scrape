@@ -47,8 +47,7 @@ if (process.env.MONGODB_URI) {
 }
 var db = mongoose.connection;
 
-/*mongoose.connect("mongodb://heroku_dnbl2f3n:etrnrrvnoe7m1qmtae0jret6ss@ds111882.mlab.com:11882/heroku_dnbl2f3n");
-var db = mongoose.connection;*/
+
 
 // Show any mongoose errors
 db.on("error", function(error) {
@@ -76,14 +75,14 @@ app.get("/", function(req, res) {
         });
 });
 
-// A GET request to scrape the nhl/oilers website
+// A GET request to scrape the espn falcons website
 app.get("/scrape", function(req, res) {
     // First, we grab the body of the html with request
-    request("http://www.espn.com/nfl/team/_/name/atl/atlanta-falcons", function(error, response, html) {
+    request("https://www.reddit.com/r/falcons/", function(error, response, html) {
         // Then, we load that into cheerio and save it to $ for a shorthand selector
         var $ = cheerio.load(html);
-        // Now, we grab every h2 within an article tag, and do the following:
-        $("h1.realStory").each(function(i, element) {
+        // Now, we grab every p within an title tag, and do the following:
+        $("p.title").each(function(i, element) {
 
             // Save an empty result object
             var result = {};
